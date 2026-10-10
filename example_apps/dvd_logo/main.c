@@ -1,23 +1,159 @@
 #include <windows.h>
+#include <stdlib.h>
 #include "window.h"
 
-// gcc -o main.exe main.c window.c -lgdi32
+static void dvd_logo_on_tick(Window *win);
+static void dvd_logo_on_click(Window *win, int x, int y);
+static void dvd_logo_on_destroy(Window *win);
 
-void on_tick(Window *win)
+typedef struct 
 {
-    static int dx = 5;
-    static int dy = 5;
+    int x_abs_speed;
+    int y_abs_speed;
 
-    win->x += dx;
-    win->y += dy;
-    if (win->x <= 0 || win->x + win->w >= GetSystemMetrics(SM_CXSCREEN)) dx = -dx;
-    if (win->y <= 0 || win->y + win->h >= GetSystemMetrics(SM_CYSCREEN)) dy = -dy;
+    int x_dir_multiplier;
+    int y_dir_multiplier;
+
+    int color_index;
+} Dvd_Logo;
+
+#define NUM_COLORS 8
+COLORREF colors[NUM_COLORS] = 
+{
+    RGB(190, 0, 255),
+    RGB(0, 254, 255),
+    RGB(255, 131, 0),
+    RGB(0, 38, 255),
+    RGB(255, 250, 1),
+    RGB(255, 38, 0),
+    RGB(255, 0, 139),
+    RGB(0, 255, 38),
+};
+HBITMAP hBitmapsColored[NUM_COLORS] = {0};
+
+int dvd_logo_create(Window *win, HBITMAP bitmap, int x, int y, int color_index)
+{
+    if (!win) return 0;
+
+    Dvd_Logo *logo = (Dvd_Logo *)malloc(sizeof(Dvd_Logo));
+    if (!logo) return 0;
+
+    BITMAP bm;
+    GetObject(bitmap, sizeof(bm), &bm);
+
+    if (!window_create(win, x, y, bm.bmWidth / 10, bm.bmHeight / 10)) { free(logo); return 0; }
+    window_set_tick_callback(win, dvd_logo_on_tick);
+    window_set_click_callback(win, dvd_logo_on_click);
+    window_set_destroy_callback(win, dvd_logo_on_destroy);
+    window_set_bitmap(win, bitmap);
+
+    logo->x_abs_speed = 5;
+    logo->y_abs_speed = 5;
+    logo->x_dir_multiplier = 1;
+    logo->y_dir_multiplier = 1;
+    logo->color_index = color_index;
+
+    window_set_data(win, logo);
+
+    return 1;
+}
+
+static void dvd_logo_on_tick(Window *win)
+{
+    Dvd_Logo *logo = (Dvd_Logo *)window_get_data(win);
+    if (!logo) return;
+
+    win->x += logo->x_abs_speed * logo->x_dir_multiplier;
+    win->y += logo->y_abs_speed * logo->y_dir_multiplier;
+
+    int collided_x = 0;
+    int collided_y = 0;
+
+    if (win->x <= 0) {
+        logo->x_dir_multiplier = 1;
+        collided_x = 1;
+    }
+    if (win->x + win->w >= GetSystemMetrics(SM_CXSCREEN)) {
+        logo->x_dir_multiplier = -1;
+        collided_x = 1;
+    }
+
+    if (win->y <= 0) {
+        logo->y_dir_multiplier = 1;
+        collided_y = 1;
+    }
+    if (win->y + win->h >= GetSystemMetrics(SM_CYSCREEN)) {
+        logo->y_dir_multiplier = -1;
+        collided_y = 1;
+    }
+
+    int color_index_old = logo->color_index;
+    if (collided_x || collided_y) 
+    {
+        int color_index_new = color_index_old;
+        do {
+            color_index_new = rand() % NUM_COLORS;
+        } while (color_index_new == color_index_old);
+        window_set_bitmap(win, hBitmapsColored[color_index_new]);
+        logo->color_index = color_index_new;
+    }
 
     window_move_to(win, win->x, win->y);
 }
 
+static void dvd_logo_on_click(Window *win, int x, int y)
+{
+    (void)x;
+    (void)y;
+
+    window_destroy(win);
+}
+
+static void dvd_logo_on_destroy(Window *win)
+{
+    Dvd_Logo *logo = (Dvd_Logo *)window_get_data(win);
+    if (logo) free(logo);
+}
+
+HBITMAP get_bitmap_colored(HBITMAP hBitmap, COLORREF color)
+{
+    HBITMAP result = (HBITMAP)CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, 0);
+
+    BITMAP bitmap;
+    GetObject(result, sizeof(bitmap), &bitmap);
+    HDC hdc = CreateCompatibleDC(NULL);
+    HBITMAP hbmOld = (HBITMAP)SelectObject(hdc, result);
+
+    for (int y = 0; y < bitmap.bmHeight; y++)
+    {
+        for (int x = 0; x < bitmap.bmWidth; x++)
+        {
+            COLORREF pixelColor = GetPixel(hdc, x, y);
+            if (pixelColor != RGB(255, 0, 255)) // Alpha
+            {
+                int r = GetRValue(pixelColor);
+                int g = GetGValue(pixelColor);  
+                int b = GetBValue(pixelColor);
+
+                r = r * GetRValue(color) / 255;
+                g = g * GetGValue(color) / 255;
+                b = b * GetBValue(color) / 255;
+
+                SetPixel(hdc, x, y, RGB(r, g, b));
+            }
+        }
+    }
+
+    SelectObject(hdc, hbmOld);
+    DeleteDC(hdc);
+
+    return result;
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    srand((unsigned int)GetTickCount());
+
     // Unused parameters (to avoid compiler warnings)
     (void)hPrevInstance;
     (void)lpCmdLine;
@@ -28,10 +164,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HBITMAP hBitmap = (HBITMAP) LoadImageW(hInstance, L"DVD_LOGO", IMAGE_BITMAP, 0, 0, 0);
     if (hBitmap == NULL) return 2; 
 
-    Window win = {0};
-    if (!window_create(&win, 100, 100, 110, 65)) return 3;
-    window_set_tick_callback(&win, on_tick);
-    window_set_bitmap(&win, hBitmap);
+    for (int i = 0; i < NUM_COLORS; i++)
+    {
+        hBitmapsColored[i] = get_bitmap_colored(hBitmap, colors[i]);
+        if (hBitmapsColored[i] == NULL) return 2;
+    }
 
-    return window_run();
+    Window logos[10] = {0};
+    for (int i = 0; i < 10; i++)
+    {
+        int x = rand() % (GetSystemMetrics(SM_CXSCREEN) - 100 + 1);
+        int y = rand() % (GetSystemMetrics(SM_CYSCREEN) - 100 + 1);
+        int c = rand() % NUM_COLORS;
+        if (!dvd_logo_create(&logos[i], hBitmapsColored[c], x, y, c)) return 3;
+    }
+
+    int result = window_run();
+    DeleteObject(hBitmap);
+    for (int i = 0; i < NUM_COLORS; i++)
+    {
+        DeleteObject(hBitmapsColored[i]);
+    }
+    return result;
 }

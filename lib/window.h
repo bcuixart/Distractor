@@ -14,6 +14,7 @@ struct Window
     void (*on_tick)(Window *win);
     void (*on_paint)(Window *win);
     void (*on_click)(Window *win, int mx, int my);
+    void (*on_destroy)(Window *win);
 
     HBITMAP bitmap;
 
@@ -28,6 +29,10 @@ void window_destroy(Window *win);
 void window_set_tick_callback(Window *win, void (*on_tick)(Window *win));
 void window_set_paint_callback(Window *win, void (*on_paint)(Window *win));
 void window_set_click_callback(Window *win, void (*on_click)(Window *win, int mx, int my));
+void window_set_destroy_callback(Window *win, void (*on_destroy)(Window *win));
+
+void window_set_data(Window *win, void *data);
+void* window_get_data(Window *win);
 
 void window_set_bitmap(Window *win, HBITMAP bitmap);
 

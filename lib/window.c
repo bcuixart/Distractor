@@ -1,5 +1,7 @@
 #include "window.h"
 
+static int num_windows = 0;
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (msg == WM_NCCREATE) 
@@ -55,6 +57,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             // Fired when the user clicks the left mouse button
             if (!win->on_click) break;
 
+            win->on_click(win, LOWORD(lParam), HIWORD(lParam));
+
             break; 
         
         case WM_CLOSE:
@@ -64,8 +68,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         
         case WM_DESTROY:
             // Fired when the window is destroyed
+            if (win->on_destroy) win->on_destroy(win);
+
+            num_windows--;
             KillTimer(hwnd, 1);
-            PostQuitMessage(0);
+            if (num_windows <= 0) PostQuitMessage(0);
             break;
 
         default:
@@ -98,6 +105,8 @@ int init_window_module(HINSTANCE hInstance, const char *program_name)
     wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
 
     if(!RegisterClassEx(&wc)) return 0;
+
+    num_windows = 0;
     return 1;
 }
 
@@ -126,6 +135,8 @@ int window_create(Window *win, int x, int y, int w, int h)
     ShowWindow(hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(hwnd);
 
+    num_windows++;
+
 	return 1;
 }
 
@@ -152,6 +163,26 @@ void window_set_click_callback(Window *win, void (*on_click)(Window *win, int mx
 {
     if (!win) return;
     win->on_click = on_click;
+}
+
+void window_set_destroy_callback(Window *win, void (*on_destroy)(Window *win))
+{
+    if (!win) return;
+    win->on_destroy = on_destroy;
+}
+
+void window_set_data(Window *win, void *data)
+{
+    if (!win) return;
+
+    win->data = data;
+}
+
+void* window_get_data(Window *win)
+{
+    if (!win) return NULL;
+
+    return win->data;
 }
 
 void window_set_bitmap(Window *win, HBITMAP bitmap)
