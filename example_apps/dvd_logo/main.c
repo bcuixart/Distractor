@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "window.h"
 
+#define NUM_LOGOS 1
+
 static void dvd_logo_on_tick(Window *win);
 static void dvd_logo_on_click(Window *win, int x, int y);
 static void dvd_logo_on_destroy(Window *win);
@@ -170,8 +172,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (hBitmapsColored[i] == NULL) return 2;
     }
 
-    Window logos[10] = {0};
-    for (int i = 0; i < 10; i++)
+    Window logos[NUM_LOGOS] = {0};
+    for (int i = 0; i < NUM_LOGOS; i++)
     {
         int x = rand() % (GetSystemMetrics(SM_CXSCREEN) - 100 + 1);
         int y = rand() % (GetSystemMetrics(SM_CYSCREEN) - 100 + 1);

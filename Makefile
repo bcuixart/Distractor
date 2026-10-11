@@ -8,6 +8,7 @@ APPS := dvd_logo
 
 OBJS := $(BUILD)/lib/window.o \
         $(BUILD)/src/main.o \
+		$(BUILD)/src/config.o \
         $(APPS:%=$(BUILD)/example_apps/%/main.o)
 
 .PHONY: all apps distractor clean $(APPS)
@@ -29,8 +30,9 @@ $(BUILD)/%.o: %.rc
 $(BUILD)/libwindow.a: $(BUILD)/lib/window.o
 	ar rcs $@ $^
 
-$(BUILD)/distractor.exe: $(BUILD)/src/main.o
-	$(CC) $(LDFLAGS) $^ -o $@
+$(BUILD)/distractor.exe: $(BUILD)/src/main.o \
+						$(BUILD)/src/config.o
+	$(CC) $^ -o $@
 
 $(BUILD)/%.exe: $(BUILD)/example_apps/%/main.o \
                 $(BUILD)/example_apps/%/resources.o \

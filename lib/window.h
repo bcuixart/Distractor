@@ -41,4 +41,4 @@ void window_resize(Window *win, int w, int h);
 
 int  window_run(void);
 
-#endif // WINDOW_H
+#endif

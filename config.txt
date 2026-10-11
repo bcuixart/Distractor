@@ -1,0 +1,15 @@
+# This is an example of a configuration file.
+# It consists of lines that must not exceed 256 characters in length.
+# Lines starting with '#' are comments and will be ignored by the program.
+# The other lines are commands that will be executed sequentially. 
+# Invalid commands will be ignored.
+# There are two types of commands: set_time_interval_seconds and add_application.
+
+# This sets the mininum and maximum time interval in seconds for one of the applications to run.
+# If it is not defined or it is invalid, the default values will be used.
+set_time_interval_seconds 1 3
+
+# This command adds an application to the list.
+# An application may be added multiple times to adjust its likelihood of being selected to run.
+# If no apps are added, the program will not run any applications.
+add_application build\dvd_logo.exe
