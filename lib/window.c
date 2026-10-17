@@ -196,8 +196,6 @@ void window_set_bitmap(Window *win, HBITMAP bitmap)
 void window_move_to(Window *win, int x, int y)
 {
 	if (!win) return;
-	if (x < 0) x = 0;
-	if (y < 0) y = 0;
 
 	win->x = x;
 	win->y = y;

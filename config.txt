@@ -13,3 +13,4 @@ set_time_interval_seconds 1 3
 # An application may be added multiple times to adjust its likelihood of being selected to run.
 # If no apps are added, the program will not run any applications.
 add_application build\dvd_logo.exe
+add_application build\grandma.exe

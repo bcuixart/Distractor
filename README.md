@@ -13,3 +13,6 @@ You can change the file used by launching the application with the file path as 
 ## Example applications:
 ### 1. DVD Logo
 A simple application that displays a bouncing DVD logo on your screen. Clicking on the logo will make it disappear.
+
+### 2. Grandma
+An application that shows a grandma character slowly walking across your screen. She cannot be clicked on, and will continue to walk across the screen until she reaches the other side.

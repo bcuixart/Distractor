@@ -4,7 +4,7 @@ LDFLAGS := -mwindows
 LDLIBS  := -lgdi32
 BUILD   := build
 
-APPS := dvd_logo
+APPS := dvd_logo grandma
 
 OBJS := $(BUILD)/lib/window.o \
         $(BUILD)/src/main.o \

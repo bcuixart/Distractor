@@ -2,6 +2,16 @@
 #include <stdlib.h>
 #include "window.h"
 
+void print_error(const char *msg)
+{
+    DWORD errCode = GetLastError();
+    LPVOID errMsg;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   NULL, errCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&errMsg, 0, NULL);
+    fprintf(stderr, "%s: %s\n", msg, (char *)errMsg);
+    LocalFree(errMsg);
+}
+
 #define NUM_LOGOS 1
 
 static void dvd_logo_on_tick(Window *win);
@@ -161,15 +171,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     (void)lpCmdLine;
     (void)nCmdShow;
 
-    if (!init_window_module(hInstance, "Test Window")) return 1;
+    if (!init_window_module(hInstance, "DVD")) { print_error("Failed to initialize window module"); return 1; };
 
     HBITMAP hBitmap = (HBITMAP) LoadImageW(hInstance, L"DVD_LOGO", IMAGE_BITMAP, 0, 0, 0);
-    if (hBitmap == NULL) return 2; 
+    if (hBitmap == NULL) { print_error("Failed to load bitmap"); return 2; }
 
     for (int i = 0; i < NUM_COLORS; i++)
     {
         hBitmapsColored[i] = get_bitmap_colored(hBitmap, colors[i]);
-        if (hBitmapsColored[i] == NULL) return 2;
+        if (hBitmapsColored[i] == NULL) { print_error("Failed to create colored bitmap"); return 3; }
     }
 
     Window logos[NUM_LOGOS] = {0};
@@ -178,7 +188,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int x = rand() % (GetSystemMetrics(SM_CXSCREEN) - 100 + 1);
         int y = rand() % (GetSystemMetrics(SM_CYSCREEN) - 100 + 1);
         int c = rand() % NUM_COLORS;
-        if (!dvd_logo_create(&logos[i], hBitmapsColored[c], x, y, c)) return 3;
+        if (!dvd_logo_create(&logos[i], hBitmapsColored[c], x, y, c)) { print_error("Failed to create DVD logo"); return 4; }
     }
 
     int result = window_run();
