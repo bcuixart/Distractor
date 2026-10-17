@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include "window.h"
+#include "bitmap.h"
 
 void print_error(const char *msg)
 {
@@ -19,6 +20,7 @@ void print_error(const char *msg)
 #define GRANDMA_TICKS_PER_IMAGE 6
 
 HBITMAP hBitmaps[NUM_GRANDMA_IMAGES] = {0};
+HBITMAP hBitmapsFlipped[NUM_GRANDMA_IMAGES] = {0};
 
 static void grandma_on_tick(Window *win);
 static void grandma_on_click(Window *win, int x, int y);
@@ -44,7 +46,7 @@ int grandma_create(Window *win, int x, int y, int going_left)
 
     int image_index = rand() % NUM_GRANDMA_IMAGES;
     BITMAP bm;
-    HBITMAP bitmap = hBitmaps[image_index];
+    HBITMAP bitmap = (going_left) ? hBitmaps[image_index] : hBitmapsFlipped[image_index];
     GetObject(bitmap, sizeof(bm), &bm);
 
     if (!window_create(win, x, y, bm.bmWidth, bm.bmHeight)) { free(grandma); return 0; }
@@ -96,7 +98,7 @@ static void grandma_on_tick(Window *win)
         grandma->ticks_for_next_image = GRANDMA_TICKS_PER_IMAGE;
     
         grandma->current_image_index = (grandma->current_image_index + 1) % NUM_GRANDMA_IMAGES;
-        window_set_bitmap(win, hBitmaps[grandma->current_image_index]);
+        window_set_bitmap(win, grandma->going_left ? hBitmaps[grandma->current_image_index] : hBitmapsFlipped[grandma->current_image_index]);
     }
 }
 
@@ -132,6 +134,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         hBitmaps[i] = (HBITMAP) LoadImageW(hInstance, name, IMAGE_BITMAP, 0, 0, 0);
         if (hBitmaps[i] == NULL) { print_error("Failed to load bitmap"); return 2; }
 
+        hBitmapsFlipped[i] = bitmap_flipped_h(hBitmaps[i]);
+        if (hBitmapsFlipped[i] == NULL) { print_error("Failed to create flipped bitmap"); return 3; }
+
         if (image_witdh == 0)
         {
             BITMAP bm;
@@ -146,13 +151,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         int going_left = rand() % 2;
         int x = going_left ? GetSystemMetrics(SM_CXSCREEN) : -image_witdh;
         int y = rand() % (GetSystemMetrics(SM_CYSCREEN) - 100 + 1);
-        if (!grandma_create(&grandmas[i], x, y, going_left)) { print_error("Failed to create grandma"); return 3; }
+        if (!grandma_create(&grandmas[i], x, y, going_left)) { print_error("Failed to create grandma"); return 4; }
     }
 
     int result = window_run();
     for (int i = 0; i < NUM_GRANDMA_IMAGES; i++)
     {
         DeleteObject(hBitmaps[i]);
+        DeleteObject(hBitmapsFlipped[i]);
     }
     return result;
 }

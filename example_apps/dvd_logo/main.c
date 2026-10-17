@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include "window.h"
+#include "bitmap.h"
 
 void print_error(const char *msg)
 {
@@ -127,41 +128,6 @@ static void dvd_logo_on_destroy(Window *win)
     if (logo) free(logo);
 }
 
-HBITMAP get_bitmap_colored(HBITMAP hBitmap, COLORREF color)
-{
-    HBITMAP result = (HBITMAP)CopyImage(hBitmap, IMAGE_BITMAP, 0, 0, 0);
-
-    BITMAP bitmap;
-    GetObject(result, sizeof(bitmap), &bitmap);
-    HDC hdc = CreateCompatibleDC(NULL);
-    HBITMAP hbmOld = (HBITMAP)SelectObject(hdc, result);
-
-    for (int y = 0; y < bitmap.bmHeight; y++)
-    {
-        for (int x = 0; x < bitmap.bmWidth; x++)
-        {
-            COLORREF pixelColor = GetPixel(hdc, x, y);
-            if (pixelColor != RGB(255, 0, 255)) // Alpha
-            {
-                int r = GetRValue(pixelColor);
-                int g = GetGValue(pixelColor);  
-                int b = GetBValue(pixelColor);
-
-                r = r * GetRValue(color) / 255;
-                g = g * GetGValue(color) / 255;
-                b = b * GetBValue(color) / 255;
-
-                SetPixel(hdc, x, y, RGB(r, g, b));
-            }
-        }
-    }
-
-    SelectObject(hdc, hbmOld);
-    DeleteDC(hdc);
-
-    return result;
-}
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     srand((unsigned int)GetTickCount());
@@ -178,7 +144,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     for (int i = 0; i < NUM_COLORS; i++)
     {
-        hBitmapsColored[i] = get_bitmap_colored(hBitmap, colors[i]);
+        hBitmapsColored[i] = bitmap_tinted(hBitmap, colors[i]);
         if (hBitmapsColored[i] == NULL) { print_error("Failed to create colored bitmap"); return 3; }
     }
 
